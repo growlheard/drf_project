@@ -1,2 +1,1 @@
-<<<<<<< HEAD
 # drf_project
