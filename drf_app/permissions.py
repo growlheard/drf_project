@@ -19,4 +19,3 @@ class IsOwner(permissions.BasePermission):
             return True
         else:
             raise PermissionDenied("У вас нет доступа к этому объекту.")
-

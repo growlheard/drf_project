@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 
 from drf_app.apps import DrfAppConfig
 from drf_app.views import CourseViewSet, LessonListView, LessonCreateView, LessonUpdateView, LessonDeleteView, \
-    LessonDetailView, PaymentListView, PaymentCreateView, PaymentDetailView, PaymentUpdateView, PaymentDeleteView
+    LessonDetailView, PaymentListView, PaymentCreateView, PaymentDetailView, PaymentUpdateView, PaymentDeleteView, \
+    SubscriptionCreateView, SubscriptionUpdateView, SubscriptionDeleteView
 
 app_name = DrfAppConfig.name
 
@@ -21,4 +22,7 @@ urlpatterns = [
                   path('payment/detail/<int:pk>/', PaymentDetailView.as_view(), name='payment-detail'),
                   path('payment/update/<int:pk>/', PaymentUpdateView.as_view(), name='payment-update'),
                   path('payment/delete/<int:pk>/', PaymentDeleteView.as_view(), name='payment-delete'),
+                  path('subscription/create/', SubscriptionCreateView.as_view(), name='subscription-create'),
+                  path('subscription/update/<int:pk>/', SubscriptionUpdateView.as_view(), name='subscription-update'),
+                  path('subscription/delete/<int:pk>/', SubscriptionDeleteView.as_view(), name='subscription-delete'),
               ] + router.urls
