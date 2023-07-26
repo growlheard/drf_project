@@ -15,10 +15,7 @@ class IsModerator(permissions.BasePermission):
 
 class IsOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        if hasattr(obj, 'user'):
-            if obj.user == request.user:
-                return True
-            else:
-                raise PermissionDenied("Вы не являетесь владельцем этого объекта.")
-        raise PermissionDenied("У вас нет доступа к этому объекту.")
-
+        if obj.owner == request.user or request.user.is_superuser:
+            return True
+        else:
+            raise PermissionDenied("У вас нет доступа к этому объекту.")
