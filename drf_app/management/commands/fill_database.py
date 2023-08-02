@@ -1,56 +1,81 @@
 from django.core.management.base import BaseCommand
-from faker import Faker
-import random
-from users.models import User
-from drf_app.models import Course, Lesson, Payment
+from django.utils import timezone
 
+from users.models import User
+from drf_app.models import Course, Lesson, Payment, Subscription
+from faker import Faker
+from random import choice, randint
+
+fake = Faker()
 
 class Command(BaseCommand):
     help = 'Заполнение базы данных тестовыми данными'
 
-    def handle(self, *args, **kwargs):
-        fake = Faker()
+    def handle(self, *args, **options):
+        # Create users
+        users = []
+        for i in range(10):
+            user = User.objects.create(
+                email=fake.email(),
+                password=fake.password(),
+                first_name=fake.first_name(),
+                last_name=fake.last_name(),
+                phone=fake.phone_number(),
+                city=fake.city(),
+            )
+            users.append(user)
 
-        for _ in range(10):
-            name = fake.catch_phrase()
-            image = None
-            description = fake.paragraph(nb_sentences=3, variable_nb_sentences=True)
-            course = Course.objects.create(name=name, image=image, description=description)
+        # Create courses
+        courses = []
+        for i in range(5):
+            course = Course.objects.create(
+                name=fake.sentence(),
+                image=fake.image_url(width=640, height=480),
+                description=fake.paragraph(),
+                owner=choice(users),
+                price=randint(500, 5000),
+            )
+            courses.append(course)
 
-            for _ in range(random.randint(3, 8)):
-                lesson_name = fake.catch_phrase()
-                lesson_description = fake.paragraph(nb_sentences=2, variable_nb_sentences=True)
-                lesson_image = None
-                lesson_video = fake.url()
-                lesson = Lesson.objects.create(
-                    name=lesson_name,
-                    description=lesson_description,
-                    image=lesson_image,
-                    video=lesson_video,
-                    course=course,
-                )
+        # Create lessons
+        for i in range(20):
+            lesson = Lesson.objects.create(
+                name=fake.sentence(),
+                description=fake.paragraph(),
+                image=fake.image_url(width=640, height=480),
+                video=fake.url(),
+                course=choice(courses),
+                owner=choice(users),
+            )
 
-        for _ in range(5):
-            email = fake.email()
-            phone = fake.phone_number()
-            city = fake.city()
-            avatar = None
-            user = User.objects.create(email=email, phone=phone, city=city, avatar=avatar)
+        # Create subscriptions
+        for i in range(20):
+            subscription = Subscription.objects.create(
+                user=choice(users),
+                course=choice(courses),
+            )
 
-        for _ in range(10):  # Заполним 30 платежей
-            user = random.choice(User.objects.all())
-            date = fake.date_this_decade()
-            lesson_pay = random.choice(Lesson.objects.all())
-            course_pay = random.choice(Course.objects.all())
-            amount = round(random.uniform(10, 1000), 2)
-            payment_method = random.choice(['cash', 'transfer'])
+        # Create payments
+        for _ in range(20):
+            user = choice(users)
+            course = choice(courses)
+            lesson_pay = choice(course.lesson_set.all()) if course.lesson_set.exists() else None
+            amount = randint(500, 5000)
+            payment_method = choice([
+                Payment.PAYMENT_METHOD_CASH,
+                Payment.PAYMENT_METHOD_TRANSFER,
+            ])
+
             payment = Payment.objects.create(
                 user=user,
-                date=date,
+                date=timezone.now(),
                 lesson_pay=lesson_pay,
-                course_pay=course_pay,
+                course_pay=course,
                 amount=amount,
                 payment_method=payment_method,
+                payment_intent_id=None,
+                payment_method_id=None,
+                status=None,
             )
 
         self.stdout.write(self.style.SUCCESS('Тестовые данные успешно созданы!'))

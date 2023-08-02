@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'drf_app',
     'django_filters',
     'rest_framework_simplejwt',
+    'drf_yasg',
 ]
 
 REST_FRAMEWORK = {
@@ -143,3 +144,12 @@ MEDIA_URL = '/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
+
+
+STRIPE_PUBLISHABLE_KEY = 'pk_test_51NYqY9K03fcq2qHOsvq7o63fJ4ZvuVg2YxKFN7NdFsTt3fPIsxhVyqRq53OxDXQ7b6TjUjH7mzLHD6aUtvI4KsjG00iVAAa8GX'
+STRIPE_SECRET_KEY = 'sk_test_51NYqY9K03fcq2qHOSmeoohMfxw1JfIuDSWVjTZ1YLM1MJaKgz4dBAHdpBQymGSB40NlOgp1zXaAKIsZTAFBiENPl009bfYJbiS'
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
