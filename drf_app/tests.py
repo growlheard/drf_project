@@ -33,7 +33,9 @@ class LessonTestCase(BaseTestCase):
         )
 
     def test_create_lesson(self):
-        """ Тестирование создания урока"""
+        """
+        Тестирование создания урока.
+        """
         response = self.client.post('/lessons/create/', {'name': 'Тест_имя',
                                                          'description': 'Тест_имя',
                                                          'video': 'https://www.youtube.com'})
@@ -44,7 +46,9 @@ class LessonTestCase(BaseTestCase):
         )
 
     def test_get_all_lessons(self):
-        """ Получение всех уроков """
+        """
+        Получение всех уроков.
+        """
         response = self.client.get(
             '/lessons/'
         )
@@ -55,7 +59,9 @@ class LessonTestCase(BaseTestCase):
         )
 
     def test_delete_lesson(self):
-        """ Удаление урока """
+        """
+        Удаление урока.
+        """
         response = self.client.delete(
             '/lessons/delete/3/'
         )
@@ -65,7 +71,9 @@ class LessonTestCase(BaseTestCase):
         )
 
     def test_lesson_retrieve(self):
-        """ Изменение урока """
+        """
+        Получение деталей урока.
+        """
         response = self.client.get(
             '/lessons/3/'
         )
@@ -78,6 +86,9 @@ class LessonTestCase(BaseTestCase):
 
 class SubscriptionTest(BaseTestCase):
     def test_create_subscription(self):
+        """
+        Тестирование создания подписки.
+        """
         response = self.client.post(
             '/subscription/create/',
             {

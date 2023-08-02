@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from drf_app.models import Course, Lesson, Subscription
+from drf_app.models import Course, Lesson, Subscription, Payment
 from drf_app.validators import VideoValidator
 
 
@@ -36,3 +36,9 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = "__all__"
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = '__all__'
