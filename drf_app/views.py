@@ -168,5 +168,15 @@ class ConfirmPaymentView(APIView):
             return Response({'error': 'Не указан payment_method_id.'}, status=status.HTTP_400_BAD_REQUEST)
         payment = get_object_or_404(Payment, payment_intent_id=payment_intent_id)
         payment.payment_method_id = payment_method_id
+        payment.status = Payment.PAID
         payment.save()
+        try:
+            subscription = Subscription.objects.filter(user=payment.user, course=payment.course_pay).first()
+            if subscription:
+                subscription.status = True
+                subscription.save()
+            else:
+                Subscription.objects.create(user=payment.user, course=payment.course_pay, status=True)
+        except Exception as e:
+            raise Exception(f'Ошибка изменения статуса подписки: {str(e)}')
         return Response({'message': 'Платеж успешно подтвержден.'})
