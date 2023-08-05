@@ -1,41 +1,34 @@
-import requests
 import stripe
 from config import settings
 from drf_app.models import Payment, Course
 from users.models import User
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
-url = 'https://api.stripe.com/v1'
-headers = {'Authorization': f'Bearer {stripe.api_key}'}
 
 
 def create_payment_intent(course_pay, user_id):
     course = Course.objects.get(id=course_pay)
     amount = course.price
     user = User.objects.get(id=user_id)
-    data = [
-        ('amount', amount * 100),
-        ('currency', 'rub'),
-        ('metadata[course_pay]', course_pay),
-        ('metadata[user_id]', user_id)
-    ]
-    response = requests.post(f'{url}/payment_intents', headers=headers, data=data)
-    if response.status_code != 200:
-        raise Exception(f'Ошибка: {response.json()["error"]["message"]}')
-    return response.json()
+    metadata = {
+        'course_pay': str(course_pay),
+        'user_id': str(user_id)
+    }
+    payment_intent = stripe.PaymentIntent.create(
+        amount=int(amount * 100),
+        currency='rub',
+        metadata=metadata
+    )
+    return payment_intent
 
 
 def create_payment_method(payment_token):
-    data = {
-        'type': 'card',
-        'card[token]': payment_token,
-    }
-
-    response = requests.post(f'{url}/payment_methods', headers=headers, data=data)
-    payment_method = response.json()
-
-    if response.status_code != 200:
-        raise Exception(f'Ошибка метода платежа: {response.status_code}')
+    payment_method = stripe.PaymentMethod.create(
+        type='card',
+        card={
+            'token': payment_token,
+        }
+    )
     return payment_method
 
 
@@ -43,18 +36,33 @@ def create_payment(course_pay, user_id, payment_token, amount):
     try:
         payment_method = create_payment_method(payment_token)
         payment_intent = create_payment_intent(course_pay, user_id)
-        payment = Payment(course_pay_id=course_pay, user_id=user_id,
-                          payment_intent_id=payment_intent['id'], payment_method_id=payment_method['id'],
-                          amount=amount, payment_method=payment_method['type'])
-
-        payment.save()
+        payment = Payment.objects.create(
+            course_pay_id=course_pay,
+            user_id=user_id,
+            payment_intent_id=payment_intent['id'],
+            payment_method_id=payment_method['id'],
+            amount=amount,
+            payment_method=payment_method['type'],
+            status=Payment.PENDING
+        )
         return payment
     except Exception as e:
         raise Exception(f'Ошибка создания платежа: {str(e)}')
 
 
+def retrieve_payment(payment_intent_id):
+    try:
+        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        status = payment_intent['status']
+        return status
+    except stripe.error.StripeError as e:
+        raise Exception(f'Ошибка при получении информации о платеже: {str(e)}')
+
+
 def confirm_payment(payment_intent_id):
-    response = requests.post(f'{url}/payment_intents/{payment_intent_id}/confirm', headers=headers)
-    if response.status_code != 200:
-        raise Exception(f'Ошибка подтверждения платежа: {response.json()["error"]["message"]}')
-    return response.json()
+    try:
+        payment_intent = stripe.PaymentIntent.confirm(payment_intent_id)
+        status = payment_intent['status']
+        return status
+    except stripe.error.StripeError as e:
+        raise Exception(f'Ошибка подтверждения платежа: {str(e)}')

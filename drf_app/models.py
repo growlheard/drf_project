@@ -35,6 +35,14 @@ class Lesson(models.Model):
 
 
 class Payment(models.Model):
+    PENDING = 'Ожидает оплаты'
+    PAID = 'Оплачен'
+    CANCELED = 'Отменен'
+    STATUS_CHOICES = (
+        (PENDING, 'Ожидает оплаты'),
+        (PAID, 'Оплачен'),
+        (CANCELED, 'Отменен'),
+    )
     PAYMENT_METHOD_CASH = 'cash'
     PAYMENT_METHOD_TRANSFER = 'transfer'
     PAYMENT_METHOD_CHOICES = (

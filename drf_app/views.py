@@ -1,3 +1,5 @@
+import time
+
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
@@ -10,7 +12,7 @@ from drf_app.models import Course, Lesson, Payment, Subscription
 from drf_app.paginations import CoursePagination, LessonPagination
 from drf_app.permissions import IsModerator, IsOwner
 from drf_app.serializers import CourseSerializer, LessonSerializer, SubscriptionSerializer
-from drf_app.services import confirm_payment, create_payment
+from drf_app.services import confirm_payment, create_payment, retrieve_payment
 from users.serializers import PaymentSerializer
 
 
@@ -82,15 +84,6 @@ class PaymentListView(generics.ListAPIView):
     permission_classes = [IsModerator | IsOwner]
 
 
-class PaymentCreateView(generics.CreateAPIView):
-    """
-    Представление для создания платежа.
-    """
-    serializer_class = PaymentSerializer
-    queryset = Payment.objects.all()
-    permission_classes = [IsOwner]
-
-
 class PaymentDeleteView(generics.DestroyAPIView):
     """
     Представление для удаления платежа.
@@ -145,7 +138,7 @@ class SubscriptionDeleteView(generics.DestroyAPIView):
     permission_classes = [IsOwner]
 
 
-class PaymentIntentCreateView(generics.CreateAPIView):
+class PaymentCreateView(generics.CreateAPIView):
     serializer_class = PaymentSerializer
 
     def create(self, request, *args, **kwargs):
@@ -161,6 +154,17 @@ class PaymentIntentCreateView(generics.CreateAPIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class RetrievePaymentView(APIView):
+    def get(self, request, payment_intent_id):
+        try:
+            time.sleep(1)
+
+            status = retrieve_payment(payment_intent_id)
+            return Response({'status': status})
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
+
 class ConfirmPaymentView(APIView):
     def patch(self, request, payment_intent_id):
         payment_method_id = request.data.get('payment_method_id')
@@ -168,5 +172,15 @@ class ConfirmPaymentView(APIView):
             return Response({'error': 'Не указан payment_method_id.'}, status=status.HTTP_400_BAD_REQUEST)
         payment = get_object_or_404(Payment, payment_intent_id=payment_intent_id)
         payment.payment_method_id = payment_method_id
+        payment.status = Payment.PAID
         payment.save()
+        try:
+            subscription = Subscription.objects.filter(user=payment.user, course=payment.course_pay).first()
+            if subscription:
+                subscription.status = True
+                subscription.save()
+            else:
+                Subscription.objects.create(user=payment.user, course=payment.course_pay, status=True)
+        except Exception as e:
+            raise Exception(f'Ошибка изменения статуса подписки: {str(e)}')
         return Response({'message': 'Платеж успешно подтвержден.'})
