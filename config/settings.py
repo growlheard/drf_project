@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -43,6 +44,8 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework_simplejwt',
     'drf_yasg',
+    'django_celery_beat',
+    'corsheaders',
 ]
 
 REST_FRAMEWORK = {
@@ -64,6 +67,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -153,17 +157,39 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
-# URL-адрес брокера сообщений
-CELERY_BROKER_URL = 'redis://localhost:6379' # Например, Redis, который по умолчанию работает на порту 6379
-
-# URL-адрес брокера результатов, также Redis
+# URL-Р°РґСЂРµСЃ Р±СЂРѕРєРµСЂР° СЃРѕРѕР±С‰РµРЅРёР№
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_TIMEZONE = 'Europe/Moscow'
 
-# Часовой пояс для работы Celery
-CELERY_TIMEZONE = "Australia/Tasmania"
+CELERY_BEAT_SCHEDULE = {
+    'check_active_user': {
+        'task': 'drf_app.tasks.check_active_user',
+        'schedule': timedelta(days=1),  # Р—Р°РїСѓСЃРєР°С‚СЊ РєР°Р¶РґС‹Р№ РґРµРЅСЊ
+    },
+    'send_update_email': {
+        'task': 'drf_app.tasks.send_update_email',
+        'schedule': timedelta(hours=4),  # Р—Р°РїСѓСЃРєР°С‚СЊ РєР°Р¶РґС‹Рµ 4 С‡Р°СЃР°
+    },
+}
 
-# Флаг отслеживания выполнения задач
-CELERY_TASK_TRACK_STARTED = True
 
-# Максимальное время на выполнение задачи
-CELERY_TASK_TIME_LIMIT = 30 * 60
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:8000',
+]
+
+CORS_ALLOW_ALL_ORIGINS = False
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+]
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.inbox.ru'
+EMAIL_PORT = 587  # РїРѕСЂС‚ SMTP СЃРµСЂРІРµСЂР°
+EMAIL_USE_TLS = True  # РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ TLS С€РёС„СЂРѕРІР°РЅРёРµ
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = 'ultrabob@inbox,ru'  # email РѕС‚РїСЂР°РІРёС‚РµР»СЏ
+EMAIL_HOST_PASSWORD = 'F2AV6xnGWt4p6M7px3nE'  # РїР°СЂРѕР»СЊ РѕС‚РїСЂР°РІРёС‚РµР»СЏ
+DEFAULT_CHARSET = 'utf-8'
