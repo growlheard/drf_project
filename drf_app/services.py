@@ -51,6 +51,7 @@ def create_payment(course_pay, user_id, payment_token, amount):
         raise Exception(f'Ошибка создания платежа: {str(e)}')
 
 
+
 def retrieve_payment(payment_intent_id):
     try:
         payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
