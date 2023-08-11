@@ -6,7 +6,7 @@ from users.models import User
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
-def create_payment_intent(course_pay, user_id):
+def create_payment_intent(course_pay, user_id, payment_method):
     course = Course.objects.get(id=course_pay)
     amount = course.price
     user = User.objects.get(id=user_id)
@@ -17,7 +17,8 @@ def create_payment_intent(course_pay, user_id):
     payment_intent = stripe.PaymentIntent.create(
         amount=int(amount * 100),
         currency='rub',
-        metadata=metadata
+        metadata=metadata,
+        payment_method=payment_method['id']
     )
     return payment_intent
 
@@ -35,7 +36,7 @@ def create_payment_method(payment_token):
 def create_payment(course_pay, user_id, payment_token, amount):
     try:
         payment_method = create_payment_method(payment_token)
-        payment_intent = create_payment_intent(course_pay, user_id)
+        payment_intent = create_payment_intent(course_pay, user_id, payment_method)
         payment = Payment.objects.create(
             course_pay_id=course_pay,
             user_id=user_id,
@@ -48,6 +49,7 @@ def create_payment(course_pay, user_id, payment_token, amount):
         return payment
     except Exception as e:
         raise Exception(f'Ошибка создания платежа: {str(e)}')
+
 
 
 def retrieve_payment(payment_intent_id):
