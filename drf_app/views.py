@@ -1,5 +1,7 @@
 import time
 
+import stripe
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
@@ -157,30 +159,25 @@ class PaymentCreateView(generics.CreateAPIView):
 class RetrievePaymentView(APIView):
     def get(self, request, payment_intent_id):
         try:
-            time.sleep(1)
-
-            status = retrieve_payment(payment_intent_id)
-            return Response({'status': status})
+            payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            return Response({
+                'status': payment_intent.status, })
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
 
 class ConfirmPaymentView(APIView):
-    def patch(self, request, payment_intent_id):
-        payment_method_id = request.data.get('payment_method_id')
-        if payment_method_id is None:
-            return Response({'error': 'Не указан payment_method_id.'}, status=status.HTTP_400_BAD_REQUEST)
-        payment = get_object_or_404(Payment, payment_intent_id=payment_intent_id)
-        payment.payment_method_id = payment_method_id
-        payment.status = Payment.PAID
-        payment.save()
+    def post(self, request, payment_intent_id):
         try:
-            subscription = Subscription.objects.filter(user=payment.user, course=payment.course_pay).first()
-            if subscription:
-                subscription.status = True
-                subscription.save()
-            else:
-                Subscription.objects.create(user=payment.user, course=payment.course_pay, status=True)
-        except Exception as e:
-            raise Exception(f'Ошибка изменения статуса подписки: {str(e)}')
-        return Response({'message': 'Платеж успешно подтвержден.'})
+            payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            payment_intent.confirm()
+            try:
+                payment = Payment.objects.get(payment_intent_id=payment_intent_id)
+                payment.status = Payment.PAID
+                payment.save()
+            except Payment.DoesNotExist:
+                raise Http404("Payment not found")
+
+            return Response({'message': 'Payment confirmed successfully'})
+        except stripe.error.StripeError as e:
+            return Response({'error': str(e)}, status=400)
