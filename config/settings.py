@@ -13,10 +13,13 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+from dotenv.main import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+load_dotenv(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
@@ -97,9 +100,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'drf_project',
-        'USER': 'postgres',
-        'PASSWORD': 'qwerty'
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 
@@ -158,7 +163,7 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 # URL-адрес брокера сообщений
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_TIMEZONE = 'Europe/Moscow'
@@ -181,15 +186,11 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_ALL_ORIGINS = False
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',
-]
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.inbox.ru'
 EMAIL_PORT = 587  # порт SMTP сервера
 EMAIL_USE_TLS = True  # использовать TLS шифрование
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = 'ultrabob@inbox,ru'  # email отправителя
-EMAIL_HOST_PASSWORD = 'F2AV6xnGWt4p6M7px3nE'  # пароль отправителя
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER'),  # email отправителя
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD'),  # пароль отправителя
 DEFAULT_CHARSET = 'utf-8'

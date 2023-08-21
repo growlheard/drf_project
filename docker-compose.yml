@@ -1,0 +1,81 @@
+version: '3'
+services:
+  db:
+    image: postgres:15.1-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pg_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: pg_isready -U ${DB_USER} -d ${DB_NAME}
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: "redis"
+    container_name: redis
+    expose:
+      - "6379"
+    ports:
+      - "9999:8001"
+      - "6379:6379"
+    healthcheck:
+      test: redis-cli ping
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./redis-data:/var/lib/redis
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "python manage.py makemigrations
+      && python manage.py migrate
+      && python manage.py fill_database 
+      && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+
+  celery:
+    container_name: celery
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "celery -A config worker --loglevel=info"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - web
+
+  celery-beat:
+    container_name: celery-beat
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "sleep 30 && celery -A config beat --loglevel=info"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  pg_data:
