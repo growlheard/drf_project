@@ -1,4 +1,4 @@
-version: '3'
+version: '3.9'
 services:
   db:
     image: postgres:15.1-alpine
@@ -62,8 +62,10 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - db
-      - web
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   celery-beat:
     container_name: celery-beat
@@ -74,8 +76,10 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   pg_data:
